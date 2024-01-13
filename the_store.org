@@ -84,7 +84,7 @@ To create a file of vectors.
 > pkg install -forge signal
 > pkg load signal
 #+begin_src octave :results value :tangle "bark_loop.m"
-  s_file = 'bark10_m.wav';
+  s_file = 'bark24_m.wav';
   L = 1024;
   info = audioinfo(s_file);
   [len, fs] = audioread(s_file);
@@ -103,7 +103,7 @@ To create a file of vectors.
                         % Window function
   NFFT = 2^nextpow2(L); 
 
-  			      % Loop over the frames of the sound file
+    			      % Loop over the frames of the sound file
   for i=1:sf_frames-1
     bin = [];
     start = i*1024;
@@ -112,33 +112,35 @@ To create a file of vectors.
     [x, fs] = audioread(s_file, samples);
 
     Y = fft(hanning(L).*x)/L;
-                          	% Amplitude spectrum in P1
+                            	% Amplitude spectrum in P1
     P2 = abs(Y/L);
     P1 = P2(1:L/2+1);
     P1(2:end-1) = 2*P1(2:end-1);
-                       		% Calculate filter
+                         		% Calculate filter
     f_bark = arrayfun(@(x) 26.81*x/(1960+x)-0.53, f);
     f_val = 10.^((15.81 + 7.5*(f_bark+0.474) - 17.5*(1 + (f_bark+0.474).^2).^(1/2))/80);
-            			%    s_con = sqrt(f_val' .* P1);
+              			%    s_con = sqrt(f_val' .* P1);
     s_con = f_val' .* P1;
     s_conq = sqrt(s_con);
     [mx, imx] = max(s_conq);
 
-  				% extract bark bands from the fft
+    				% extract bark bands from the fft
     bark_i=0;
     for j=1:512
-  			 % is the current bark band larger than bark_i
+    			 % is the current bark band larger than bark_i
       if f_bark(j) > bark_i;
-   				%        disp(f_bark(j));
-        bin = [bin, s_conq(j)];
+  			       % make an average between adjacent bins
+        b_val = s_conq([j-1:j+2])/4;
+        bin = [bin, b_val];
+  				%        bin = [bin, s_conq(j)];
         bark_i = bark_i+1;
       endif
     end
     result = [result;bin];
   end
-            			% Normalization factor
+              			% Normalization factor
   norm = 1.0/max(max(result));
-            			% Normalize
+              			% Normalize
   result_norm = norm*result;
 
   test = result_norm(10, :);
